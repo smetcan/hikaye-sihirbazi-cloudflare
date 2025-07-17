@@ -1,20 +1,21 @@
 // functions/call-gemini.js
 
-export async function onRequest(context) {
+// DÜZELTME: Fonksiyonu genel "onRequest" yerine, sadece POST isteklerini
+// dinleyecek olan "onRequestPost" olarak değiştiriyoruz.
+// Bu, "405 Method Not Allowed" hatasını çözer.
+export async function onRequestPost(context) {
   // context.request: Gelen istek nesnesi
   // context.env: Ortam değişkenleri (API anahtarı burada)
-
-  // Sadece POST isteklerine izin ver
-  if (context.request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
 
   try {
     const { type, prompt } = await context.request.json();
     const apiKey = context.env.GEMINI_API_KEY; // API anahtarını buradan alıyoruz
+
+    // Hata ayıklama için API anahtarının varlığını kontrol et
+    if (!apiKey) {
+      console.error("HATA: GEMINI_API_KEY ortam değişkeni bulunamadı veya boş.");
+      throw new Error("Sunucu yapılandırma hatası: API anahtarı eksik.");
+    }
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
@@ -27,8 +28,9 @@ export async function onRequest(context) {
     });
 
     if (!apiResponse.ok) {
-        console.error('Google API Error:', await apiResponse.text());
-        return new Response(JSON.stringify({ error: 'Google API isteği başarısız' }), {
+        const errorBody = await apiResponse.text();
+        console.error('Google API Hatası:', errorBody);
+        return new Response(JSON.stringify({ error: `Google API isteği başarısız: ${apiResponse.status}` }), {
             status: apiResponse.status,
             headers: { 'Content-Type': 'application/json' },
         });
@@ -43,7 +45,7 @@ export async function onRequest(context) {
     });
 
   } catch (error) {
-    console.error('Sunucu Hatası:', error);
+    console.error('Sunucu Hatası:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
