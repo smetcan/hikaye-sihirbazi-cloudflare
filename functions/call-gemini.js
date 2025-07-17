@@ -1,9 +1,13 @@
-// functions/call-gemini.post.js
+// functions/call-gemini.js
 
 export async function onRequest(context) {
-  // context.request: Gelen istek nesnesi
-  // context.env: Ortam değişkenleri (API anahtarı burada)
+  // Düzeltme: Gelen isteğin metodunu manuel olarak kontrol ediyoruz.
+  // Bu, Cloudflare yönlendirme sorunlarını aşmanın en garantili yoludur.
+  if (context.request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
 
+  // Metod POST ise, ana mantığı çalıştır.
   try {
     const { type, prompt } = await context.request.json();
     const apiKey = context.env.GEMINI_API_KEY; // API anahtarını buradan alıyoruz
