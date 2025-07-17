@@ -1,9 +1,9 @@
 // functions/call-gemini.js
 
-export async function onRequestPOST(context) {
+async function handleRequest(request, env) {
   try {
-    const { type, prompt } = await context.request.json();
-    const apiKey = context.env.GEMINI_API_KEY;
+    const { type, prompt } = await request.json();
+    const apiKey = env.GEMINI_API_KEY;
 
     if (!apiKey) {
       throw new Error("Sunucu yapılandırma hatası: API anahtarı eksik.");
@@ -52,7 +52,10 @@ export async function onRequestPOST(context) {
   }
 }
 
-// CORS preflight request için
+export async function onRequestPOST(context) {
+  return handleRequest(context.request, context.env);
+}
+
 export async function onRequestOPTIONS(context) {
   return new Response(null, {
     status: 200,
