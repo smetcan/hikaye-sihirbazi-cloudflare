@@ -1,9 +1,13 @@
-// functions/call-gemini.js
+// functions/generate.js
 
-async function handleRequest(request, env) {
+export async function onRequest(context) {
+  if (context.request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
+
   try {
-    const { type, prompt } = await request.json();
-    const apiKey = env.GEMINI_API_KEY;
+    const { type, prompt } = await context.request.json();
+    const apiKey = context.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       throw new Error("Sunucu yapılandırma hatası: API anahtarı eksik.");
@@ -23,10 +27,7 @@ async function handleRequest(request, env) {
         console.error('Google API Hatası:', errorBody);
         return new Response(JSON.stringify({ error: `Google API isteği başarısız: ${apiResponse.status}` }), {
             status: apiResponse.status,
-            headers: { 
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
+            headers: { 'Content-Type': 'application/json' },
         });
     }
 
@@ -34,35 +35,14 @@ async function handleRequest(request, env) {
 
     return new Response(JSON.stringify(data), {
       status: 200,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Sunucu Hatası:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
-}
-
-export async function onRequestPOST(context) {
-  return handleRequest(context.request, context.env);
-}
-
-export async function onRequestOPTIONS(context) {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }
