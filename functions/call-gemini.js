@@ -1,16 +1,9 @@
 // functions/call-gemini.js
 
-export async function onRequest(context) {
-  // Düzeltme: Gelen isteğin metodunu manuel olarak kontrol ediyoruz.
-  // Bu, Cloudflare yönlendirme sorunlarını aşmanın en garantili yoludur.
-  if (context.request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
-
-  // Metod POST ise, ana mantığı çalıştır.
+export async function onRequestPOST(context) {
   try {
     const { type, prompt } = await context.request.json();
-    const apiKey = context.env.GEMINI_API_KEY; // API anahtarını buradan alıyoruz
+    const apiKey = context.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       throw new Error("Sunucu yapılandırma hatası: API anahtarı eksik.");
@@ -30,7 +23,10 @@ export async function onRequest(context) {
         console.error('Google API Hatası:', errorBody);
         return new Response(JSON.stringify({ error: `Google API isteği başarısız: ${apiResponse.status}` }), {
             status: apiResponse.status,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            },
         });
     }
 
@@ -38,14 +34,32 @@ export async function onRequest(context) {
 
     return new Response(JSON.stringify(data), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
     });
 
   } catch (error) {
     console.error('Sunucu Hatası:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
     });
   }
+}
+
+// CORS preflight request için
+export async function onRequestOPTIONS(context) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }
